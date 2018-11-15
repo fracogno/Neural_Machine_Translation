@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 
 '''
@@ -25,7 +26,7 @@ def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0):
 '''
     TO DO DESCRIPTION AND COMMENTS!!!
 '''   
-def prepare_sequences(source_sentences, target_sentences, source_dict, target_dict, max_length_source, max_length_target):
+def prepare_sequences(source_sentences, target_sentences, source_dict, target_dict):
     
     source_input, target_input, target_output = [], [], []
     
@@ -34,7 +35,7 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
         # Prepare source sentence
         source = list(source_sentences[i])
         source_mapped = source_dict.text_to_indices(source)
-        padded_source = pad_sentence(source_mapped, max_length_source)
+        padded_source = pad_sentence(source_mapped, source_dict.max_length_sentence)
         
         # Prepare target sentence
         target = list(target_sentences[i])
@@ -45,12 +46,22 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
         for j in range(1, len(target_mapped)):
             # Split input and output of target sentence
             input_text, output_text = target_mapped[:j], target_mapped[j]
-            padded_target = pad_sentence(input_text, max_length_target)
+            padded_target = pad_sentence(input_text, target_dict.max_length_sentence)
             
             source_input.append(padded_source)
             target_input.append(padded_target)
             target_output.append(output_text)
 
     return np.array(source_input), np.array(target_input), np.array(target_output) 
+    
+    
+    
+def load_dump(filename):
+    return pickle.load(open(filename, "rb" ))
+
+
+def save_dump(object_to_save, filename):
+    pickle.dump(object_to_save, open(filename, "wb"))
+    
     
     

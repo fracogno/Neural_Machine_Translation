@@ -136,6 +136,6 @@ def prepare_data(data):
         german_sentences.append(line_german)
         
         i+=1
-        if i >= 200: break        
+        if i >= 50000: break        
 
     return np.array(english_sentences), np.array(german_sentences) 

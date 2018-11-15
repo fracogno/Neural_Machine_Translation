@@ -29,7 +29,7 @@ def embedding_layer(input_x, vocabulary_size, embedding_size):
 '''
     TODO DESCRIPTION
 '''
-def create_network(input_sequence, output_sequence, source_dict_size, target_dict_size, embedding_size, lstm_neurons, target_vocabulary_size, verbose=0):
+def create_network(input_sequence, output_sequence, source_dict_size, target_dict_size, embedding_size, lstm_neurons, verbose=0):
 
     with tf.variable_scope("encoding") as encoding_scope:
         encoder_embedding = embedding_layer(input_sequence, source_dict_size, embedding_size)
@@ -45,7 +45,7 @@ def create_network(input_sequence, output_sequence, source_dict_size, target_dic
         out_shape = dec_outputs.get_shape().as_list()
         dec_outputs = tf.reshape(dec_outputs, [-1, out_shape[1] * out_shape[2]])
 
-    logits = tf.layers.dense(inputs=dec_outputs, units=target_vocabulary_size, activation=None)
+    logits = tf.layers.dense(inputs=dec_outputs, units=target_dict_size, activation=None)
     
     # Print shapes
     if verbose > 0: 

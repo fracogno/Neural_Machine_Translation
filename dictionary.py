@@ -6,11 +6,12 @@ class LanguageDictionary:
     
     special_words = ["<PAD>", "<START>", "<END>", "<UNK>"]
     
-    def __init__(self, sentences):
+    def __init__(self, sentences, max_length_sentence):
         
         # I want to have a unique mapping between a word and a corresponding integer (and vice versa)
         self.index_to_word = list()
         self.word_to_index = dict()
+        self.max_length_sentence = max_length_sentence
         
         # Mapping for special words needed
         for i in range(0,len(self.special_words)):
