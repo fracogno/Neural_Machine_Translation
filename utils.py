@@ -51,6 +51,9 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
             source_input.append(padded_source)
             target_input.append(padded_target)
             target_output.append(output_text)
+            
+            if j >= target_dict.max_length_sentence:
+                break
 
     return np.array(source_input), np.array(target_input), np.array(target_output) 
     
