@@ -1,2 +1,2 @@
-# Neural_Machine_Translation
+# Neural Machine Translation
 Implementation of a machine translation with Tensorflow
