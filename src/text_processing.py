@@ -136,9 +136,9 @@ def prepare_data(data):
         # Add new row to all sentence in the two languages
         english_sentences.append(line_english)
         german_sentences.append(line_german)
-        
+
         i+=1
-        if i >= 60: break        
+        if i >= 70: break        
 
     return np.array(english_sentences), np.array(german_sentences) 
 
@@ -153,13 +153,16 @@ def max_length_sentence(dataset):
 '''
     TO DO DESCRIPTION
 '''
-def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0):
+def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0, pad_before=True):
     
     pad_length = max_length_sentence - len(tokenized_sentence)
     sentence = list(tokenized_sentence)
     
     if pad_length > 0:
-        return np.pad(tokenized_sentence, (0, pad_length), mode='constant', constant_values=int(padding_value))
+        if pad_before:
+            return np.pad(tokenized_sentence, (pad_length, 0), mode='constant', constant_values=int(padding_value))
+        else:
+            return np.pad(tokenized_sentence, (0, pad_length), mode='constant', constant_values=int(padding_value))
     else: # Cut sequence if longer than max_length_sentence
         return sentence[:max_length_sentence]
 
@@ -169,7 +172,7 @@ def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0):
 '''   
 def prepare_sequences(source_sentences, target_sentences, source_dict, target_dict):
     
-    source_input, target_input, target_output = [], [], []
+    source_input, target_input = [], []
     
     for i in range(len(source_sentences)):
         
@@ -183,23 +186,13 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
         target.insert(0, "<START>")
         target.append("<END>")
         target_mapped = target_dict.text_to_indices(target)
+        padded_target = pad_sentence(target_mapped, target_dict.max_length_sentence, pad_before=False)
+        
+        # Append sentences
+        source_input.append(padded_source)
+        target_input.append(padded_target)
 
-        for j in range(1, len(target_mapped)):
-            # Split input and output of target sentence
-            input_text, output_text = target_mapped[:j], target_mapped[j]
-            padded_target = pad_sentence(input_text, target_dict.max_length_sentence)
-            
-            # If unseen data are longer than max_length, cut sequence
-            if j > target_dict.max_length_sentence:
-                break
-            
-            source_input.append(padded_source)
-            target_input.append(padded_target)
-            target_output.append(output_text)
-            
-            
-
-    return np.array(source_input), np.array(target_input), np.array(target_output) 
+    return np.array(source_input), np.array(target_input)
     
 
 '''
