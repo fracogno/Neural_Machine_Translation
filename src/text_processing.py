@@ -11,7 +11,7 @@ import pickle
     Key => Contracted form
     Value => Expanded form
 '''
-CONTRACTION_MAP = {"ain't": "is not", "aren't": "are not","can't": "cannot", 
+CONTRACTION_MAP = {"'s": "is", "ain't": "is not", "aren't": "are not","can't": "cannot", 
                    "can't've": "cannot have", "'cause": "because", "could've": "could have", 
                    "couldn't": "could not", "couldn't've": "could not have","didn't": "did not", 
                    "doesn't": "does not", "don't": "do not", "hadn't": "had not", 
@@ -99,7 +99,7 @@ def expand_contractions(sentence, contraction_mapping):
 def preprocess_sentence(sentence):
     # Transform some punctuation to space
     line = re.sub(r"[,.;@#?!]+\ *", " ", sentence)
-
+    
     # Remove contractions
     line = expand_contractions(line, CONTRACTION_MAP)
 
@@ -110,6 +110,9 @@ def preprocess_sentence(sentence):
     default_wt = nltk.word_tokenize
     line = default_wt(line)
     
+    # Remove contractions in tokens
+    line = [CONTRACTION_MAP[i] if i in CONTRACTION_MAP else i for i in line]
+    
     return line
 
 
@@ -119,6 +122,8 @@ def preprocess_sentence(sentence):
 def prepare_data(data):
     
     english_sentences, german_sentences = [], []
+    
+    set_english = set()
     
     i = 0
     # Read line by line
@@ -133,12 +138,19 @@ def prepare_data(data):
         # Normalization and tokenization
         line_english, line_german = preprocess_sentence(line_split[0]), preprocess_sentence(line_split[1])
         
-        # Add new row to all sentence in the two languages
-        english_sentences.append(line_english)
-        german_sentences.append(line_german)
-
-        i+=1
-        if i >= 70: break        
+        # I do not want duplicates of sentences in English
+        tmp_eng = " ".join(line_english)
+        if tmp_eng not in set_english:
+            set_english.add(tmp_eng)
+            
+            # Add new row to all sentence in the two languages
+            english_sentences.append(line_english)
+            german_sentences.append(line_german)
+            
+            i+=1
+            
+        #debug    
+        if i >=55000: break        
 
     return np.array(english_sentences), np.array(german_sentences) 
 
