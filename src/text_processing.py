@@ -150,7 +150,7 @@ def prepare_data(data):
             i+=1
             
         #debug    
-        if i >=55000: break        
+        if i >=500: break        
 
     return np.array(english_sentences), np.array(german_sentences) 
 
