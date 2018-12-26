@@ -4,13 +4,12 @@ import numpy as np
 import pickle
 
 
-
-'''
-    Json object containing mapping between contractions and extendend versions of verbs and others
+"""
+    JSON object containing mapping between contractions and extendend versions of verbs and others.
     
-    Key => Contracted form
-    Value => Expanded form
-'''
+    Key => (string) Contracted form
+    Value => (string) Expanded form
+"""
 CONTRACTION_MAP = {"'s": "is", "ain't": "is not", "aren't": "are not","can't": "cannot", 
                    "can't've": "cannot have", "'cause": "because", "could've": "could have", 
                    "couldn't": "could not", "couldn't've": "could not have","didn't": "did not", 
@@ -56,16 +55,15 @@ CONTRACTION_MAP = {"'s": "is", "ain't": "is not", "aren't": "are not","can't": "
 
 
 
-
-
-
-'''
-    Read data from file
-
-    :param str filename: Name of the local file to be opened
-'''
 def load_doc(filename):
+    """Read data from file.
 
+    Args:
+        filename (str): Name of the local file to be opened.
+
+    Returns:
+        str: Unique string containing the whole file.
+    """
     file = open(filename, 'r')
     text = file.read()
     file.close()
@@ -73,11 +71,63 @@ def load_doc(filename):
     return text
 
 
-'''
-    TO DO DESCRIPTION
-'''
-def expand_contractions(sentence, contraction_mapping):
+
+def prepare_data(data):
+    """Split unique string of data into English and German sentences. Each element of the English array has the corresponding translation in the German one.
+
+    Args:
+        data (str): String to be split (line format: English\tGerman\n).
+        
+    Returns:
+        array of str: English sentences.
+        array of str: German sentences.
+    """
+    english_sentences, german_sentences = [], []
     
+    # Set of English sentences, I do not want to have multiple translations for the same sentence
+    set_english = set()
+    
+    i = 0
+    # Read line by line
+    for line in data.split("\n"):
+        
+        # Split line into English and German parts
+        line_split = line.split("\t")
+        
+        # Assert that there are two translations
+        assert(len(line_split) == 2)
+        
+        # Normalization and tokenization
+        line_english, line_german = preprocess_sentence(line_split[0]), preprocess_sentence(line_split[1])
+        
+        tmp_eng = " ".join(line_english)
+        # Check whether the current sentence in English is a duplicate in the dataset or not
+        if tmp_eng not in set_english:
+            # Add sentence in the set
+            set_english.add(tmp_eng)
+            
+            # Add new row to all sentence in the two languages
+            english_sentences.append(line_english)
+            german_sentences.append(line_german)
+            
+            i+=1
+        #debug    
+        if i >1000: break #100000: break        
+
+    return np.array(english_sentences), np.array(german_sentences) 
+
+
+
+def expand_contractions(sentence, contraction_mapping):
+    """Expand contractions in a data from file.
+
+    Args:
+        sentence (str): Sentence to be expanded.
+        contraction_mapping (json): Object containing contractions map.
+        
+    Returns:
+        str: Expanded version of the string.
+    """
     contractions_pattern = re.compile('({})'.format('|'.join(contraction_mapping.keys())), 
                                       flags=re.IGNORECASE|re.DOTALL)
     def expand_match(contraction):
@@ -93,10 +143,16 @@ def expand_contractions(sentence, contraction_mapping):
     return expanded_sentence
 
 
-'''
-    TO DO DESCRIPTION
-'''
+
 def preprocess_sentence(sentence):
+    """Preprocess input sentence (remove punctuation, tokenizer, lower case etc).
+
+    Args:
+        sentence (str): Sentence to be normalized and tokenized.
+        
+    Returns:
+        str: Preprocessed sentence.
+    """
     # Transform some punctuation to space
     line = re.sub(r"[,.;@#?!]+\ *", " ", sentence)
     
@@ -116,87 +172,83 @@ def preprocess_sentence(sentence):
     return line
 
 
-'''
-    TO DO DESCRIPTION
-'''
-def prepare_data(data):
-    
-    english_sentences, german_sentences = [], []
-    
-    set_english = set()
-    
-    i = 0
-    # Read line by line
-    for line in data.split("\n"):
-        
-        # Split line into English and German parts
-        line_split = line.split("\t")
-        
-        # Assert that there are two translations
-        assert(len(line_split) == 2)
-        
-        # Normalization and tokenization
-        line_english, line_german = preprocess_sentence(line_split[0]), preprocess_sentence(line_split[1])
-        
-        # I do not want duplicates of sentences in English
-        tmp_eng = " ".join(line_english)
-        if tmp_eng not in set_english:
-            set_english.add(tmp_eng)
-            
-            # Add new row to all sentence in the two languages
-            english_sentences.append(line_english)
-            german_sentences.append(line_german)
-            
-            i+=1
-            
-        #debug    
-        if i >=500: break        
 
-    return np.array(english_sentences), np.array(german_sentences) 
-
-
-'''
-    TO DO DESCRIPTION
-'''
 def max_length_sentence(dataset):
+    """Find length of longest sentence in the dataset.
+
+    Args:
+        dataset (array of array of str): Tokenized sentences.
+        
+    Returns:
+        int: Maximum length in the dataset.
+    """
     return max([len(line) for line in dataset])
 
 
-'''
-    TO DO DESCRIPTION
-'''
+
 def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0, pad_before=True):
-    
+    """Pad sentence with default value to make all sentences with same length.
+
+    Args:
+        tokenized_sentence (array of str): Array of tokens.
+        max_length_sentence (int): Length of longest sentence.
+        padding_value (int, optional): Value used to pad the sentence.
+        pad_before (bool, optional): Padding added before or after the sentence.
+        
+    Returns:
+        str: Padded sentence.
+    """
+    # Calculate how many padding value to add
     pad_length = max_length_sentence - len(tokenized_sentence)
     sentence = list(tokenized_sentence)
     
     if pad_length > 0:
+        
         if pad_before:
             return np.pad(tokenized_sentence, (pad_length, 0), mode='constant', constant_values=int(padding_value))
         else:
             return np.pad(tokenized_sentence, (0, pad_length), mode='constant', constant_values=int(padding_value))
+    
     else: # Cut sequence if longer than max_length_sentence
         return sentence[:max_length_sentence]
 
+
     
-'''
-    TO DO DESCRIPTION AND COMMENTS!!!
-'''   
 def prepare_sequences(source_sentences, target_sentences, source_dict, target_dict):
-    
+    """Add padding to sentences, add <START> and <END> token to target sentence and convert each token to the index of the corresponding vocabulary.
+
+    Args:
+        source_sentences (array of array of str): Tokenized sentences in English.
+        target_sentences (array of array of str): Tokenized sentences in German.
+        source_dict (obj): Dictionary object of source language (English).
+        target_dict (obj): Dictionary object of target language (German).
+        
+    Returns:
+        array of array of int: English mapped tokens.
+        array of array of int: German mapped tokens.
+    """
     source_input, target_input = [], []
     
+    # Iterate over each English and German sentence at the same time
     for i in range(len(source_sentences)):
         
         # Prepare source sentence
         source = list(source_sentences[i])
+        
+        # Convert each word to corresponding integer
         source_mapped = source_dict.text_to_indices(source)
+        
+        # Pad sentence
         padded_source = pad_sentence(source_mapped, source_dict.max_length_sentence)
         
         # Prepare target sentence
         target = list(target_sentences[i])
+        
+        # Add special tokens at the beginning and end of sentence
         target.insert(0, "<START>")
         target.append("<END>")
+        
+        # Map to integers and pad
         target_mapped = target_dict.text_to_indices(target)
         padded_target = pad_sentence(target_mapped, target_dict.max_length_sentence, pad_before=False)
         
@@ -205,18 +257,27 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
         target_input.append(padded_target)
 
     return np.array(source_input), np.array(target_input)
+
     
 
-'''
-    TO DO DESCRIPTION
-'''      
-def load_dump(filename):
-    return pickle.load(open(filename, "rb" ))
-
-
-'''
-    TO DO DESCRIPTION
-'''   
 def save_dump(object_to_save, filename):
-    pickle.dump(object_to_save, open(filename, "wb"))
-    
+    """Save locally python variables as pickle dump.
+
+    Args:
+        object_to_save (any): Python variable to be saved.
+        filename (str): Path of the dump to be saved.
+    """
+    pickle.dump(object_to_save, open(filename, "wb"))   
+
+
+
+def load_dump(filename):
+    """Load local pickle dump to Python variable.
+
+    Args:
+        filename (str): Path of the dump.
+        
+    Returns:
+        any: Python variable.
+    """
+    return pickle.load(open(filename, "rb" ))
