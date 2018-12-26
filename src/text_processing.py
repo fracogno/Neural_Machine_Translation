@@ -54,7 +54,6 @@ CONTRACTION_MAP = {"'s": "is", "ain't": "is not", "aren't": "are not","can't": "
                    "you'll've": "you will have", "you're": "you are", "you've": "you have" } 
 
 
-
 def load_doc(filename):
     """Read data from file.
 
@@ -69,7 +68,6 @@ def load_doc(filename):
     file.close()
     
     return text
-
 
 
 def prepare_data(data):
@@ -111,11 +109,10 @@ def prepare_data(data):
             german_sentences.append(line_german)
             
             i+=1
-        #debug    
-        if i >1000: break #100000: break        
+        # I want to limit the number of sentences used to train 
+        if i >=500: break        
 
     return np.array(english_sentences), np.array(german_sentences) 
-
 
 
 def expand_contractions(sentence, contraction_mapping):
@@ -141,7 +138,6 @@ def expand_contractions(sentence, contraction_mapping):
         
     expanded_sentence = contractions_pattern.sub(expand_match, sentence)
     return expanded_sentence
-
 
 
 def preprocess_sentence(sentence):
@@ -172,7 +168,6 @@ def preprocess_sentence(sentence):
     return line
 
 
-
 def max_length_sentence(dataset):
     """Find length of longest sentence in the dataset.
 
@@ -183,7 +178,6 @@ def max_length_sentence(dataset):
         int: Maximum length in the dataset.
     """
     return max([len(line) for line in dataset])
-
 
 
 def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0, pad_before=True):
@@ -211,7 +205,6 @@ def pad_sentence(tokenized_sentence, max_length_sentence, padding_value=0, pad_b
     
     else: # Cut sequence if longer than max_length_sentence
         return sentence[:max_length_sentence]
-
 
     
 def prepare_sequences(source_sentences, target_sentences, source_dict, target_dict):
@@ -259,7 +252,6 @@ def prepare_sequences(source_sentences, target_sentences, source_dict, target_di
     return np.array(source_input), np.array(target_input)
 
     
-
 def save_dump(object_to_save, filename):
     """Save locally python variables as pickle dump.
 
@@ -268,7 +260,6 @@ def save_dump(object_to_save, filename):
         filename (str): Path of the dump to be saved.
     """
     pickle.dump(object_to_save, open(filename, "wb"))   
-
 
 
 def load_dump(filename):

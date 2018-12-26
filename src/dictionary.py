@@ -1,14 +1,29 @@
 
-'''
-    TO DO DESCRIPTION
-'''
 class LanguageDictionary:
-    
+    """Add padding to sentences, add <START> and <END> token to target sentence and convert each token to the index of the corresponding vocabulary.
+
+    Args:
+        source_sentences (array of array of str): Tokenized sentences in English.
+        target_sentences (array of array of str): Tokenized sentences in German.
+        source_dict (obj): Dictionary object of source language (English).
+        target_dict (obj): Dictionary object of target language (German).
+        
+    Returns:
+        array of array of int: English mapped tokens.
+        array of array of int: German mapped tokens.
+    """
+    # Special words needed for beginning and end sentence, padding and unknown words
     special_words = ["<PAD>", "<START>", "<END>", "<UNK>"]
     
     def __init__(self, sentences, max_length_sentence):
-        
-        # I want to have a unique mapping between a word and a corresponding integer (and vice versa)
+        """Constructor of Dictionary object, 
+
+        Args:
+            self (obj): Python reference to current object.
+            sentences (array of array of str): All tokenized sentences.
+            max_length_sentence (int): Length of longest sentence.
+        """
+        # I need a unique mapping between a word and a corresponding integer (and vice versa)
         self.index_to_word = list()
         self.word_to_index = dict()
         self.max_length_sentence = max_length_sentence
@@ -36,6 +51,15 @@ class LanguageDictionary:
         
 
     def text_to_indices(self, text_tokens):
+        """Transform tokenized sentence of word to the corresponding tokenized sentence of integers.
+
+        Args:
+            self (obj): Python reference to current object.
+            text_tokens (array of str): Tokenized sentence of words.
+
+        Returns:
+            array of int: Tokenized sentence of integers.
+        """
         mapped_sentence = list()
         
         # Convert each token word into its corresponding number
@@ -52,11 +76,20 @@ class LanguageDictionary:
 
 
     def indices_to_text(self, indices_array):
+        """Transform tokenized sentence of integers to the corresponding tokenized sentence of words.
+
+        Args:
+            self (obj): Python reference to current object.
+            indices_array (array of int): Tokenized sentence of integers.
+
+        Returns:
+            array of str: Tokenized sentence of words.
+        """
         mapped_text = list()
         
         # Iterate over array of indices
         for i in indices_array:
+            # Convert index to word
             mapped_text.append(self.index_to_word[i])
         
         return " ".join(mapped_text)
-

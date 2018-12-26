@@ -1,24 +1,44 @@
 import tensorflow as tf
+import numpy as np
 
 
-'''
-    TODO DESCRIPTION
-'''
 def new_weights(shape, name=None):
+    """Create new Tensorflow variable for the weights of network.
+
+    Args:
+        shape (array of int): Shape of weights.
+
+    Returns:
+        tf.Variable: Random truncated normal weights with stddev.
+    """
     return tf.Variable(tf.truncated_normal(shape, stddev=0.1), name=name)
 
 
-'''
-    TODO DESCRIPTION
-'''
+
 def new_biases(length, name=None):
+    """Create new Tensorflow variable for the bias of network.
+
+    Args:
+        shape (array of int): Shape of bias.
+
+    Returns:
+        tf.Variable: Constant values.
+    """
     return tf.Variable(tf.constant(0.1, shape=[length]), name=name)
 
 
-'''
-    TODO DESCRIPTION
-'''
+
 def embedding_layer(input_x, vocabulary_size, embedding_size):
+    """Create embedding layer, matrix NxF, where N rows and F features. Each row is the vector of one word.
+
+    Args:
+        input_x (TF tensor): Tensor input.
+        vocabulary_size (int): N rows
+        embedding_size (int): F columns
+
+    Returns:
+        TF tensor: Embedding lookup tensor
+    """
     init_embeds = tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0)
     embeddings = tf.Variable(init_embeds)
     layer = tf.nn.embedding_lookup(embeddings, input_x)
@@ -27,7 +47,37 @@ def embedding_layer(input_x, vocabulary_size, embedding_size):
 
 
 
-def create_network(input_sequence, output_sequence, input_keep_prob, output_keep_prob, decoder_outputs, source_dict_size, target_dict_size, embedding_size, hidden_units, number_layers):
+def get_decoder_outputs(sess, dec_output_tensor, input_tsr, output_tsr, dec_tsr, drop_tsr, dropout_prob, batch_size, target_length, hidden_size, source, target_in):
+    """For attention mechanism, I need output of decoder at each timesteps, before backpropagating errors.
+
+    Args:
+        batch_size (int): Batch size.
+        target_length (int): Longest length of target sentence.
+        hidden_size (int): LSTM hidden layer size.
+        source (array of array of int): Batch of sentences in the source language.
+        target_in (array of array of int): Batch of decoder input sentences in target language.
+
+    Returns:
+        numpy array: all decoder outputs
+    """
+    # First decoder output will be zero state
+    # Feature multiply by two because of bidirectional lstm
+    decoder_output = np.zeros((batch_size, target_length, 2 * hidden_size))
+    for i in range(target_length-1):
+
+        fgg = sess.run(dec_output_tensor, feed_dict={
+            input_tsr: source,
+            output_tsr: target_in,
+            dec_tsr: decoder_output,
+            drop_tsr: dropout_prob,
+            drop_tsr: dropout_prob,
+        })
+        decoder_output[:,i+1] = fgg[:,i]
+        
+    return decoder_output
+
+
+def create_network(input_sequence, output_sequence, keep_prob, decoder_outputs, source_dict_size, target_dict_size, embedding_size, hidden_units, number_layers):
     
     with tf.variable_scope("encoder") as encoding_scope:
 
@@ -37,11 +87,11 @@ def create_network(input_sequence, output_sequence, input_keep_prob, output_keep
         lstm_fw_cell = tf.contrib.rnn.GRUCell(hidden_units)
         lstm_bw_cell = tf.contrib.rnn.GRUCell(hidden_units)
         
-        dropout_fw = tf.contrib.rnn.DropoutWrapper(lstm_fw_cell, input_keep_prob=input_keep_prob,
-                                                   output_keep_prob=output_keep_prob)
+        dropout_fw = tf.contrib.rnn.DropoutWrapper(lstm_fw_cell, input_keep_prob=keep_prob,
+                                                   output_keep_prob=keep_prob)
 
-        dropout_bw = tf.contrib.rnn.DropoutWrapper(lstm_bw_cell, input_keep_prob=input_keep_prob,
-                                                   output_keep_prob=output_keep_prob)
+        dropout_bw = tf.contrib.rnn.DropoutWrapper(lstm_bw_cell, input_keep_prob=keep_prob,
+                                                   output_keep_prob=keep_prob)
 
         # enc_outputs shape == (batch_size, source_max_length, 2 * hidden_size)
         #enc_outputs, enc_last_state = tf.nn.dynamic_rnn(lstm_cell, encoder_embedding, dtype=tf.float32)
@@ -70,8 +120,8 @@ def create_network(input_sequence, output_sequence, input_keep_prob, output_keep
         # Score shape before last V == (B, T, F) | After V is (B, T, 1)
         expanded_encoder_outputs = tf.tile(tf.expand_dims(enc_outputs, axis=1),[1,decoder_outputs.get_shape()[1],1,1])
 
-        a = tf.layers.dense(inputs=expanded_encoder_outputs, units=32, activation=None)
-        b = tf.layers.dense(inputs=hidden_with_time_axis, units=32, activation=None)
+        a = tf.layers.dense(inputs=expanded_encoder_outputs, units=64, activation=None)
+        b = tf.layers.dense(inputs=hidden_with_time_axis, units=64, activation=None)
         print(a)
         print(b)
         print(tf.nn.tanh(a + b))
@@ -96,7 +146,10 @@ def create_network(input_sequence, output_sequence, input_keep_prob, output_keep
         print(x)
         
         lstm_cell = tf.nn.rnn_cell.GRUCell(2 * hidden_units)
-        dec_outputs, _ = tf.nn.dynamic_rnn(cell=lstm_cell, inputs=x, initial_state=enc_last_state)
+        dropout_dec = tf.contrib.rnn.DropoutWrapper(lstm_cell, 
+                                                    input_keep_prob=keep_prob,
+                                                    output_keep_prob=keep_prob)
+        dec_outputs, _ = tf.nn.dynamic_rnn(cell=dropout_dec, inputs=x, initial_state=enc_last_state)
         print(dec_outputs)
         
     # Fully connected
