@@ -145,18 +145,22 @@ def create_network(input_sequence, output_sequence, keep_prob, decoder_outputs, 
         x = tf.concat([context_vector, decoder_embedding], axis=-1)
         print(x)
         
+        mask_decoder_input = tf.cast(tf.sign(output_sequence), tf.float32)
+        sequence_length = tf.cast(tf.reduce_sum(mask_decoder_input, 1), tf.int32)
+        
         lstm_cell = tf.nn.rnn_cell.GRUCell(2 * hidden_units)
-        dropout_dec = tf.contrib.rnn.DropoutWrapper(lstm_cell, 
-                                                    input_keep_prob=keep_prob,
-                                                    output_keep_prob=keep_prob)
-        dec_outputs, _ = tf.nn.dynamic_rnn(cell=dropout_dec, inputs=x, initial_state=enc_last_state)
+        dropout_dec = tf.contrib.rnn.DropoutWrapper(lstm_cell, input_keep_prob=keep_prob, output_keep_prob=keep_prob)
+        dec_outputs, _ = tf.nn.dynamic_rnn(cell=dropout_dec, 
+                                           inputs=x, 
+                                           initial_state=enc_last_state,
+                                           sequence_length=sequence_length)
         print(dec_outputs)
         
     # Fully connected
     logits = tf.layers.dense(inputs=dec_outputs, units=target_dict_size, activation=None)
     print(logits)
 
-    return logits, dec_outputs
+    return logits, dec_outputs, mask_decoder_input
 
 
 

@@ -110,7 +110,7 @@ def prepare_data(data):
             
             i+=1
         # I want to limit the number of sentences used to train 
-        if i >=500: break        
+        if i >=3000: break        
 
     return np.array(english_sentences), np.array(german_sentences) 
 
